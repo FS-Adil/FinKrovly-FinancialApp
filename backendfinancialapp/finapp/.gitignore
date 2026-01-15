@@ -2,6 +2,7 @@ HELP.md
 
 ### my gitignore ####
 config/application-secrets.yml
+logs/
 
 target/
 .mvn/wrapper/maven-wrapper.jar

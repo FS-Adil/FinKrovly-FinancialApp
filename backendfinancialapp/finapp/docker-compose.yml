@@ -1,0 +1,9 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: finapp_db
+      POSTGRES_USER: finapp_user
+      POSTGRES_PASSWORD: finapp_password
+    ports:
+      - "5432:5432"
