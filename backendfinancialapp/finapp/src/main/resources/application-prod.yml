@@ -1,0 +1,15 @@
+server:
+  port: 8484
+
+onec:
+  odata:
+    base-url: ${ONEC_ODATA_BASE_URL:}
+    username: ${ONEC_ODATA_USERNAME:}
+    password: ${ONEC_ODATA_PASSWORD:}
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/mydb
+    username: myuser
+    password: mypass
+    driverClassName: org.postgresql.Driver
