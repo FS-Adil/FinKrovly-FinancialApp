@@ -73,12 +73,12 @@ const AdminPage = () => {
   }
 
   return (
-    <Space direction="vertical" size="large" style={{ width: '100%', padding: '24px' }}>
+    <Space orientation="vertical" size="large" style={{ width: '100%', padding: '24px' }}>
       <Title level={2}>Административная панель</Title>
       
       {!serverStatus && (
         <Alert
-          message="Тестовый режим"
+          title="Тестовый режим"
           description="Сервер недоступен. Используются тестовые данные. Изменения не будут сохранены на сервере."
           type="warning"
           showIcon

@@ -41,13 +41,17 @@ api.interceptors.response.use(
 );
 
 // =============== ТЕСТОВЫЕ ДАННЫЕ ===============
-export const mockOrganizations = [
+// ВАЖНО: Создаем КОПИЮ массива, а не используем константу
+export const getInitialMockOrganizations = () => [
   { id: '11111111-1111-1111-1111-111111111111', name: 'ООО "Ромашка"', createdAt: '2024-01-01T10:00:00Z', updatedAt: '2024-01-01T10:00:00Z' },
   { id: '22222222-2222-2222-2222-222222222222', name: 'АО "ТехноПром"', createdAt: '2024-01-02T11:30:00Z', updatedAt: '2024-01-02T11:30:00Z' },
   { id: '33333333-3333-3333-3333-333333333333', name: 'ООО "Альянс"', createdAt: '2024-01-03T09:15:00Z', updatedAt: '2024-01-03T09:15:00Z' },
   { id: '44444444-4444-4444-4444-444444444444', name: 'ИП Иванов', createdAt: '2024-01-04T14:20:00Z', updatedAt: '2024-01-04T14:20:00Z' },
   { id: '55555555-5555-5555-5555-555555555555', name: 'ЗАО "СтройИнвест"', createdAt: '2024-01-05T16:45:00Z', updatedAt: '2024-01-05T16:45:00Z' },
 ];
+
+// Создаем изменяемый массив для мок-данных
+let mockOrganizations = [...getInitialMockOrganizations()];
 
 // Категории товаров для тестовых данных
 const PRODUCT_CATEGORIES = [
@@ -70,8 +74,9 @@ const isCacheValid = (cacheKey) => {
 };
 
 const setCache = (cacheKey, data) => {
+  // ВАЖНО: Создаем глубокую копию данных перед кэшированием
   cache[cacheKey] = {
-    data,
+    data: JSON.parse(JSON.stringify(data)),
     timestamp: Date.now(),
     duration: CACHE_DURATION
   };
@@ -138,6 +143,15 @@ const generateMockReportData = (startDate, endDate, organizationId) => {
   });
 };
 
+/**
+ * Сбросить мок-данные к исходному состоянию (для тестирования)
+ */
+export const resetMockOrganizations = () => {
+  mockOrganizations = [...getInitialMockOrganizations()];
+  clearCache('organizations');
+  console.log('🔄 Мок-данные сброшены к исходному состоянию');
+};
+
 // =============== ОСНОВНЫЕ ФУНКЦИИ API ===============
 
 /**
@@ -146,10 +160,13 @@ const generateMockReportData = (startDate, endDate, organizationId) => {
  * @param {AbortSignal} signal - сигнал для отмены запроса
  */
 export const getOrganizations = async (forceRefresh = false, signal = null) => {
+  console.log('📥 getOrganizations вызван, forceRefresh:', forceRefresh);
+  
   // Проверяем кэш
   if (!forceRefresh && isCacheValid('organizations')) {
     console.log('📦 Возвращаем кэшированные данные организаций');
-    return cache.organizations.data;
+    // ВАЖНО: Возвращаем копию данных из кэша
+    return JSON.parse(JSON.stringify(cache.organizations.data));
   }
 
   try {
@@ -169,8 +186,10 @@ export const getOrganizations = async (forceRefresh = false, signal = null) => {
     serverStatus.available = false;
     serverStatus.lastCheck = Date.now();
     
-    setCache('organizations', mockOrganizations);
-    return mockOrganizations;
+    // ВАЖНО: Возвращаем КОПИЮ актуальных мок-данных
+    const dataToReturn = JSON.parse(JSON.stringify(mockOrganizations));
+    setCache('organizations', dataToReturn);
+    return dataToReturn;
   }
 };
 
@@ -182,7 +201,7 @@ export const getOrganizationById = async (id) => {
   // Проверяем кэш
   if (isCacheValid('organizations')) {
     const org = cache.organizations.data.find(o => o.id === id);
-    if (org) return org;
+    if (org) return JSON.parse(JSON.stringify(org));
   }
   
   try {
@@ -197,7 +216,7 @@ export const getOrganizationById = async (id) => {
     
     const mockOrg = mockOrganizations.find(org => org.id === id);
     if (mockOrg) {
-      return mockOrg;
+      return JSON.parse(JSON.stringify(mockOrg));
     }
     throw new Error(`Организация с ID ${id} не найдена`);
   }
@@ -208,6 +227,8 @@ export const getOrganizationById = async (id) => {
  * @param {Object} organization - данные организации
  */
 export const createOrganization = async (organization) => {
+  console.log('➕ Создание организации:', organization);
+  
   const newOrg = {
     ...organization,
     id: organization.id || generateUUID(),
@@ -218,6 +239,7 @@ export const createOrganization = async (organization) => {
   try {
     const response = await api.post('/create', newOrg);
     serverStatus.available = true;
+    // ВАЖНО: Очищаем кэш после успешного создания
     clearCache('organizations');
     return response.data;
   } catch (error) {
@@ -229,9 +251,14 @@ export const createOrganization = async (organization) => {
       throw new Error('Организация с таким UUID уже существует');
     }
     
+    // ВАЖНО: Добавляем в массив мок-данных
     mockOrganizations.push(newOrg);
+    console.log('✅ Организация добавлена в мок-данные. Всего:', mockOrganizations.length);
+    
+    // ВАЖНО: Очищаем кэш, чтобы при следующем запросе получить актуальные данные
     clearCache('organizations');
-    return newOrg;
+    
+    return JSON.parse(JSON.stringify(newOrg));
   }
 };
 
@@ -241,12 +268,15 @@ export const createOrganization = async (organization) => {
  * @param {Object} updatedData - обновленные данные
  */
 export const updateOrganization = async (id, updatedData) => {
+  console.log('✏️ Обновление организации:', id, updatedData);
+  
   try {
     const response = await api.put(`/update/${id}`, {
       ...updatedData,
       updatedAt: new Date().toISOString()
     });
     serverStatus.available = true;
+    // ВАЖНО: Очищаем кэш после успешного обновления
     clearCache('organizations');
     return response.data;
   } catch (error) {
@@ -258,14 +288,19 @@ export const updateOrganization = async (id, updatedData) => {
       throw new Error('Организация не найдена');
     }
     
+    // ВАЖНО: Обновляем данные в массиве
     mockOrganizations[index] = {
       ...mockOrganizations[index],
       ...updatedData,
       updatedAt: new Date().toISOString()
     };
     
+    console.log('✅ Организация обновлена в мок-данных');
+    
+    // ВАЖНО: Очищаем кэш, чтобы при следующем запросе получить актуальные данные
     clearCache('organizations');
-    return mockOrganizations[index];
+    
+    return JSON.parse(JSON.stringify(mockOrganizations[index]));
   }
 };
 
@@ -274,9 +309,12 @@ export const updateOrganization = async (id, updatedData) => {
  * @param {string} id - UUID организации
  */
 export const deleteOrganization = async (id) => {
+  console.log('🗑️ Удаление организации:', id);
+  
   try {
     const response = await api.delete(`/delete/${id}`);
     serverStatus.available = true;
+    // ВАЖНО: Очищаем кэш после успешного удаления
     clearCache('organizations');
     return response.data;
   } catch (error) {
@@ -288,8 +326,13 @@ export const deleteOrganization = async (id) => {
       throw new Error('Организация не найдена');
     }
     
+    // ВАЖНО: Удаляем из массива
     mockOrganizations.splice(index, 1);
+    console.log('✅ Организация удалена из мок-данных. Осталось:', mockOrganizations.length);
+    
+    // ВАЖНО: Очищаем кэш, чтобы при следующем запросе получить актуальные данные
     clearCache('organizations');
+    
     return { success: true, id, deletedAt: new Date().toISOString() };
   }
 };
@@ -369,6 +412,7 @@ export const checkServerConnection = async () => {
  * Очистить кэш организаций
  */
 export const clearOrganizationsCache = () => {
+  console.log('🧹 Принудительная очистка кэша организаций');
   clearCache('organizations');
 };
 
@@ -378,8 +422,13 @@ export const apiUtils = {
   isCacheValid,
   clearAllCache: clearCache,
   checkServerConnection,
-  getServerStatus: () => ({ ...serverStatus })
+  getServerStatus: () => ({ ...serverStatus }),
+  resetMockOrganizations,
+  getMockOrganizations: () => JSON.parse(JSON.stringify(mockOrganizations))
 };
+
+// ВАЖНО: Экспортируем актуальные мок-данные как функцию, а не как константу
+export { mockOrganizations };
 
 export default {
   getOrganizations,
@@ -390,6 +439,6 @@ export default {
   calculateReport,
   getServerStatus,
   clearOrganizationsCache,
-  mockOrganizations,
+  resetMockOrganizations,
   apiUtils
 };

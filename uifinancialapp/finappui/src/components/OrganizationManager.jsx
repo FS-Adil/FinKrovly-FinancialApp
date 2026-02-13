@@ -456,7 +456,7 @@ const OrganizationManager = ({ onUpdate, serverStatus: externalServerStatus }) =
     >
       {error && (
         <Alert
-          message="Ошибка"
+          title="Ошибка"
           description={error}
           type="error"
           showIcon
@@ -468,7 +468,7 @@ const OrganizationManager = ({ onUpdate, serverStatus: externalServerStatus }) =
       
       {!serverStatus && !error && (
         <Alert
-          message="Тестовый режим"
+          title="Тестовый режим"
           description="Сервер недоступен. Изменения будут сохранены только локально."
           type="warning"
           showIcon

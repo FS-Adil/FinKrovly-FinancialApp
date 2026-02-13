@@ -110,7 +110,7 @@ const UserPage = () => {
   };
 
   return (
-    <Space direction="vertical" size="large" style={{ width: '100%', padding: '24px' }}>
+    <Space orientation="vertical" size="large" style={{ width: '100%', padding: '24px' }}>
       <Card 
         title={
           <Space>
@@ -135,7 +135,7 @@ const UserPage = () => {
       >
         {apiError && !serverStatus && (
           <Alert
-            message="Режим тестовых данных"
+            title="Режим тестовых данных"
             description="Сервер недоступен. Используются демонстрационные данные. Изменения не будут сохранены."
             type="warning"
             showIcon
@@ -148,7 +148,7 @@ const UserPage = () => {
         
         {!serverStatus && (
           <Alert
-            message="Информация"
+            title="Информация"
             description="Вы работаете с тестовыми данными. Для работы с реальными данными убедитесь, что сервер доступен по адресу http://192.168.0.248"
             type="info"
             showIcon
@@ -156,7 +156,7 @@ const UserPage = () => {
           />
         )}
         
-        <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+        <Space orientation="vertical" size="middle" style={{ width: '100%' }}>
           <div>
             <div style={{ marginBottom: 8 }}>Период:</div>
             <RangePicker 
