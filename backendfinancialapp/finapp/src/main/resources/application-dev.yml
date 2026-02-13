@@ -1,0 +1,51 @@
+server:
+  port: 8383
+
+spring:
+  config:
+    import:
+      - "optional:file:./config/application-secrets.yml"
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/finapp_db
+    username: finapp_user
+    password: finapp_password
+    driverClassName: org.postgresql.Driver
+
+  jpa:
+    database: postgresql
+    show-sql: true
+    database-platform: org.hibernate.dialect.PostgreSQL10Dialect
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate.jdbc.time_zone: UTC
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  # Конфигурация Liquibase
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml  # Главный файл миграций
+    enabled: true                               # Включить Liquibase
+    drop-first: false                          # Не удалять БД при старте
+    contexts:                                  # Контексты миграций
+    default-schema: public                     # Схема по умолчанию
+    liquibase-schema: public                   # Схема для таблиц Liquibase
+    database-change-log-table: databasechangelog        # Таблица для логов
+    database-change-log-lock-table: databasechangeloglock  # Таблица для блокировок
+
+  # Настройки логирования
+  logging:
+    level:
+      com.example.demo: DEBUG                    # Уровень логирования нашего приложения
+      org.springframework.web: INFO
+      org.hibernate: WARN                        # Hibernate логи только предупреждения и ошибки
+      org.hibernate.SQL: DEBUG                   # SQL логи (только для отладки)
+      org.hibernate.type: TRACE                  # Логирование параметров (только для отладки)
+    pattern:
+      console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"  # Формат логов
+      file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file:
+      name: logs/fin-app.log                    # Файл логов
+      max-size: 10MB                             # Максимальный размер файла лога
+      max-history: 30
