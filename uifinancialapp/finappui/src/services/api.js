@@ -1,17 +1,19 @@
 import axios from 'axios';
 import dayjs from 'dayjs';
 
-const API_URL = import.meta.env.REACT_APP_API_URL || 'http://localhost:8080';
-const API_TIMEOUT = parseInt(import.meta.env.REACT_APP_API_TIMEOUT || '5000', 10);
+// Убираем API_URL, так как используем прокси
+const API_TIMEOUT = parseInt(import.meta.env.REACT_APP_API_TIMEOUT || '10000', 10);
 const CACHE_DURATION = parseInt(import.meta.env.REACT_APP_CACHE_DURATION || '30000', 10);
 
-// Конфигурация axios
+// Базовый URL для API через прокси
+const API_BASE_URL = '/api/v1';
+
+// Конфигурация axios - убираем baseURL из конфигурации, так как будем использовать полные пути
 const api = axios.create({
-  baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: API_TIMEOUT,
+//   timeout: API_TIMEOUT,
 });
 
 // Интерцептор для логирования запросов
@@ -170,7 +172,8 @@ export const getOrganizations = async (forceRefresh = false, signal = null) => {
   }
 
   try {
-    const response = await api.get('/get', { signal });
+    // Используем полный путь через прокси
+    const response = await api.get(`${API_BASE_URL}/organizations`, { signal });
     serverStatus.available = true;
     serverStatus.lastCheck = Date.now();
     
@@ -205,7 +208,7 @@ export const getOrganizationById = async (id) => {
   }
   
   try {
-    const response = await api.get(`/get/${id}`);
+    const response = await api.get(`${API_BASE_URL}/organizations/${id}`);
     serverStatus.available = true;
     serverStatus.lastCheck = Date.now();
     return response.data;
@@ -237,7 +240,7 @@ export const createOrganization = async (organization) => {
   };
 
   try {
-    const response = await api.post('/create', newOrg);
+    const response = await api.post(`${API_BASE_URL}/organizations`, newOrg);
     serverStatus.available = true;
     // ВАЖНО: Очищаем кэш после успешного создания
     clearCache('organizations');
@@ -271,7 +274,7 @@ export const updateOrganization = async (id, updatedData) => {
   console.log('✏️ Обновление организации:', id, updatedData);
   
   try {
-    const response = await api.put(`/update/${id}`, {
+    const response = await api.put(`${API_BASE_URL}/organizations/${id}`, {
       ...updatedData,
       updatedAt: new Date().toISOString()
     });
@@ -312,7 +315,7 @@ export const deleteOrganization = async (id) => {
   console.log('🗑️ Удаление организации:', id);
   
   try {
-    const response = await api.delete(`/delete/${id}`);
+    const response = await api.delete(`${API_BASE_URL}/organizations/${id}`);
     serverStatus.available = true;
     // ВАЖНО: Очищаем кэш после успешного удаления
     clearCache('organizations');
@@ -338,6 +341,92 @@ export const deleteOrganization = async (id) => {
 };
 
 /**
+ * ПРЕОБРАЗОВАТЕЛЬ ДАННЫХ - только преобразование, без генерации
+ * @param {Array} serverData - данные с сервера (поля: Наименование, Количество, Стоимость, Себестоимость)
+ * @param {string} startDate - дата начала в формате YYYY-MM-DD
+ * @param {string} endDate - дата окончания в формате YYYY-MM-DD
+ * @param {string} organizationId - ID организации
+ * @returns {Array} - преобразованные данные в формате generateMockReportData
+ */
+const transformServerData = (serverData, startDate, endDate, organizationId) => {
+  // Если нет данных с сервера, возвращаем пустой массив
+  if (!serverData || !Array.isArray(serverData) || serverData.length === 0) {
+    console.warn('Нет данных с сервера для преобразования');
+    return [];
+  }
+
+  // Константы для категорий (как в оригинале)
+  const PRODUCT_CATEGORIES = [
+    'Металлопродукция',
+  ];
+
+  // Название организации (можно получить с сервера или использовать заглушку)
+  const organizationName = `Организация ${organizationId}`;
+
+  // Преобразуем каждый элемент с сервера
+  return serverData.map((item, index) => {
+    // Проверяем наличие всех необходимых полей
+    const name = item['name'];
+    const quantity = item['quantity'];
+    const price = item['price'];
+    const cost = item['cost'];
+
+    // Если критически важные поля отсутствуют, пропускаем элемент
+    if (!name || isNaN(quantity) || isNaN(price) || isNaN(cost)) {
+      console.warn('Пропущен элемент с некорректными данными:', item);
+      return null;
+    }
+
+    // Вычисляем прибыль и рентабельность
+    const profit = parseFloat((price - cost).toFixed(2));
+    const profitability = cost > 0 
+      ? parseFloat(((profit / cost) * 100).toFixed(2))
+      : 0;
+
+    // Генерируем ID и productId (как в оригинале)
+    const id = `${organizationId}-${index + 1}-${Date.now()}`;
+    const productId = `PRD-${(index + 1).toString().padStart(6, '0')}`;
+
+    // Определяем категорию на основе названия товара
+    const category = PRODUCT_CATEGORIES[0];
+
+    // Возвращаем объект в формате generateMockReportData
+    return {
+      id,
+      productId,
+      name,
+      category,
+      quantity,
+      price,
+      cost,
+      profit,
+      profitability,
+      date: generateRandomDate(startDate, endDate), // дата генерируется случайно
+      organization: organizationName,
+      organizationId,
+    };
+  }).filter(item => item !== null); // Удаляем некорректные элементы
+};
+
+/**
+ * Генерирует случайную дату в заданном диапазоне
+ * @param {string} startDate - начальная дата
+ * @param {string} endDate - конечная дата
+ * @returns {string} - дата в формате YYYY-MM-DD
+ */
+const generateRandomDate = (startDate, endDate) => {
+  const start = dayjs(startDate);
+  const end = dayjs(endDate);
+  const daysDiff = end.diff(start, 'day');
+  
+  return start
+    .add(Math.floor(Math.random() * (daysDiff + 1)), 'day')
+    .format('YYYY-MM-DD');
+};
+
+
+
+/**
  * Рассчитать отчет
  * @param {Object} period - период { startDate, endDate }
  * @param {string} organizationId - UUID организации
@@ -355,15 +444,35 @@ export const calculateReport = async (period, organizationId) => {
   }
 
   try {
-    const response = await api.post('/calculate', {
-      startDate: dayjs(startDate).format('YYYY-MM-DD'),
-      endDate: dayjs(endDate).format('YYYY-MM-DD'),
+    const response = await api.post(`${API_BASE_URL}/assembly/find-all`, {
+      startDate: dayjs(startDate).format('YYYY-MM-DD') + 'T00:00:00',
+      endDate: dayjs(endDate).format('YYYY-MM-DD') + 'T23:59:59',
       organizationId
     });
     serverStatus.available = true;
-    return response.data;
+
+    const org = mockOrganizations.find(o => o.id === organizationId) || { name: 'Тестовая организация' };
+    const transformedData = transformServerData(
+      response.data, 
+      startDate, 
+      endDate, 
+      organizationId
+    );
+
+    return {
+      data: transformedData,
+      meta: {
+        organizationId,
+        organizationName: org.name,
+        period: { startDate, endDate },
+        generatedAt: new Date().toISOString(),
+        totalRecords: transformedData.length,
+        totalProfit: transformedData.reduce((sum, item) => sum + item.profit, 0),
+        averageProfitability: transformedData.reduce((sum, item) => sum + item.profitability, 0) / transformedData.length
+      }
+    };
   } catch (error) {
-    console.warn('⚠️ API недоступен, генерируем тестовые данные отчета');
+    console.warn('⚠️ API недоступен, генерируем тестовые данные отчета{}', error);
     serverStatus.available = false;
     
     const mockData = generateMockReportData(startDate, endDate, organizationId);
@@ -389,6 +498,7 @@ export const calculateReport = async (period, organizationId) => {
  * Получить статус сервера
  */
 export const getServerStatus = () => {
+    console.info('Получить статус сервера {}', serverStatus.available);
   return serverStatus.available;
 };
 
@@ -397,7 +507,7 @@ export const getServerStatus = () => {
  */
 export const checkServerConnection = async () => {
   try {
-    await api.get('/health', { timeout: 2000 });
+    await api.get(`${API_BASE_URL}/health`, { timeout: 2000 });
     serverStatus.available = true;
     serverStatus.lastCheck = Date.now();
     return true;

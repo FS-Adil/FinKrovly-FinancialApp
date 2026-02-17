@@ -82,6 +82,7 @@ const UserPage = () => {
       } else {
         const source = getServerStatus() ? 'сервера' : 'тестовых данных';
         message.success(`Данные успешно загружены с ${source} (${reportData.length} записей)`);
+        setServerStatus(getServerStatus());
       }
     } catch (error) {
       const errorMessage = error.response?.data?.message || 'Ошибка при расчете отчета';
