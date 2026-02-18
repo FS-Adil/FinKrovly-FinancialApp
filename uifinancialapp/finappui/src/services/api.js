@@ -6,7 +6,7 @@ const API_TIMEOUT = parseInt(import.meta.env.REACT_APP_API_TIMEOUT || '10000', 1
 const CACHE_DURATION = parseInt(import.meta.env.REACT_APP_CACHE_DURATION || '30000', 10);
 
 // Базовый URL для API через прокси
-const API_BASE_URL = '/api/v1';
+const API_BASE_URL = '/api/v2';
 
 // Конфигурация axios - убираем baseURL из конфигурации, так как будем использовать полные пути
 const api = axios.create({
@@ -444,7 +444,7 @@ export const calculateReport = async (period, organizationId) => {
   }
 
   try {
-    const response = await api.post(`${API_BASE_URL}/assembly/find-all`, {
+    const response = await api.post(`${API_BASE_URL}/cost-price/assembly`, {
       startDate: dayjs(startDate).format('YYYY-MM-DD') + 'T00:00:00',
       endDate: dayjs(endDate).format('YYYY-MM-DD') + 'T23:59:59',
       organizationId
