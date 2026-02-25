@@ -1,7 +1,9 @@
 // services/calculationApi.js
 
-// Базовый URL для API
-const API_BASE_URL = 'http://localhost:3001/api';
+import axios from 'axios';
+
+// Базовый URL для API через прокси
+const API_BASE_URL = '/api/v1';
 
 // Статусы этапов
 export const STAGE_STATUS = {
@@ -19,14 +21,23 @@ export const STAGE_NAMES = {
   CALCULATE_FINAL_COST: 'Расчет себестоимости продукции'
 };
 
-// Симулируем работу сервера (для демонстрации)
-const simulateServerDelay = () => new Promise(resolve => setTimeout(resolve, 1000));
+// Конфигурация axios
+const api = axios.create({
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
 // Класс для работы с API расчета
 class CalculationApi {
   constructor() {
     this.baseUrl = API_BASE_URL;
     this.processId = null;
+    this.resetStages();
+  }
+
+  // Сброс этапов к начальному состоянию
+  resetStages() {
     this.stages = [
       { id: 1, name: STAGE_NAMES.GET_EXPENSES, status: STAGE_STATUS.PENDING, error: null },
       { id: 2, name: STAGE_NAMES.GET_INCOMES, status: STAGE_STATUS.PENDING, error: null },
@@ -39,21 +50,13 @@ class CalculationApi {
   // Запуск нового процесса расчета
   async startCalculation(params) {
     try {
-      const response = await fetch(`${this.baseUrl}/calculation/start`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(params)
-      });
+      const response = await api.post(`${this.baseUrl}/calculation/start`, params);
       
-      if (!response.ok) {
-        throw new Error('Ошибка запуска расчета');
+      if (response.data) {
+        this.processId = response.data.processId;
+        return response.data;
       }
-      
-      const data = await response.json();
-      this.processId = data.processId;
-      return data;
+      throw new Error('Ошибка запуска расчета');
     } catch (error) {
       console.error('Error starting calculation:', error);
       // В демо-режиме возвращаем тестовые данные
@@ -64,35 +67,40 @@ class CalculationApi {
   // Получение статуса процесса
   async getProcessStatus(processId) {
     try {
-      const response = await fetch(`${this.baseUrl}/calculation/status/${processId}`);
+      const response = await api.get(`${this.baseUrl}/calculation/status/${processId}`);
       
-      if (!response.ok) {
-        throw new Error('Ошибка получения статуса');
+      if (response.data) {
+        return response.data;
       }
-      
-      return await response.json();
+      throw new Error('Ошибка получения статуса');
     } catch (error) {
       console.error('Error getting process status:', error);
       // В демо-режиме симулируем прогресс
-      return this.simulateProgress();
+      return this.simulateProgress(processId);
     }
   }
 
-  // Отмена процесса
+  // Отмена процесса - отправляем POST с статусом close
   async cancelProcess(processId) {
     try {
-      const response = await fetch(`${this.baseUrl}/calculation/cancel/${processId}`, {
-        method: 'POST'
+      const response = await api.post(`${this.baseUrl}/calculation/cancel/${processId}`, {
+        status: 'close',
+        processId: processId,
+        timestamp: new Date().toISOString()
       });
       
-      if (!response.ok) {
-        throw new Error('Ошибка отмены процесса');
+      if (response.data) {
+        return response.data;
       }
-      
-      return await response.json();
+      return { success: true, message: 'Процесс отменен' };
     } catch (error) {
       console.error('Error canceling process:', error);
-      return { success: true, message: 'Процесс отменен' };
+      // В случае ошибки все равно возвращаем успех для демо-режима
+      return { 
+        success: true, 
+        message: 'Процесс отменен (демо-режим)',
+        demo: true 
+      };
     }
   }
 
@@ -100,28 +108,46 @@ class CalculationApi {
   simulateStartCalculation() {
     this.processId = 'demo_' + Date.now();
     this.currentStage = 0;
+    
+    // Сбрасываем статусы этапов
+    this.resetStages();
+    
     return { 
       processId: this.processId, 
-      message: 'Расчет запущен',
-      stages: this.stages 
+      message: 'Расчет запущен (демо-режим)',
+      stages: this.stages,
+      demo: true
     };
   }
 
   // Симуляция прогресса (для демо)
-  simulateProgress() {
-    if (!this.processId) return null;
+  simulateProgress(processId) {
+    if (!processId) return null;
+    
+    this.processId = processId;
+    
+    // Если это новый процесс (все этапы в PENDING), начинаем симуляцию
+    const allPending = this.stages.every(stage => stage.status === STAGE_STATUS.PENDING);
     
     // Обновляем статусы этапов
     const updatedStages = [...this.stages];
-    const randomStage = Math.floor(Math.random() * 5);
     
-    // Случайным образом обновляем статус одного из этапов
-    if (Math.random() > 0.7) {
-      updatedStages[randomStage].status = STAGE_STATUS.SUCCESS;
-    } else if (Math.random() > 0.8) {
-      updatedStages[randomStage].status = STAGE_STATUS.ERROR;
-      updatedStages[randomStage].error = 'Ошибка подключения к базе данных';
+    // Находим первый незавершенный этап
+    const nextPendingIndex = updatedStages.findIndex(
+      stage => stage.status === STAGE_STATUS.PENDING
+    );
+    
+    if (nextPendingIndex !== -1) {
+      // С вероятностью 80% успех, 20% ошибка для демо
+      if (Math.random() > 0.2) {
+        updatedStages[nextPendingIndex].status = STAGE_STATUS.SUCCESS;
+      } else {
+        updatedStages[nextPendingIndex].status = STAGE_STATUS.ERROR;
+        updatedStages[nextPendingIndex].error = 'Ошибка подключения к базе данных';
+      }
     }
+    
+    this.stages = updatedStages;
     
     // Проверяем, все ли этапы завершены
     const allCompleted = updatedStages.every(
@@ -132,8 +158,15 @@ class CalculationApi {
       processId: this.processId,
       stages: updatedStages,
       completed: allCompleted,
-      message: allCompleted ? 'Расчет завершен' : 'Расчет продолжается'
+      message: allCompleted ? 'Расчет завершен' : 'Расчет продолжается',
+      demo: true
     };
+  }
+
+  // Сброс состояния для нового расчета
+  reset() {
+    this.processId = null;
+    this.resetStages();
   }
 }
 

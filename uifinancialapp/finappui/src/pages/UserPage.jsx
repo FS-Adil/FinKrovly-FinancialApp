@@ -1,5 +1,3 @@
-// UserPage.jsx (фрагмент с добавлением модального окна)
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Card, DatePicker, Select, Button, Space, message, Alert, Spin, Badge, Tooltip, Tag } from 'antd';
 import { SearchOutlined, ReloadOutlined, WarningOutlined } from '@ant-design/icons';
@@ -26,12 +24,35 @@ const UserPage = () => {
   const [apiError, setApiError] = useState(null);
   const [serverStatus, setServerStatus] = useState(true);
   
-  // Состояние для модального окна прогресса
+  // Состояния для модального окна прогресса
   const [progressVisible, setProgressVisible] = useState(false);
-  const [calculationParams, setCalculationParams] = useState(null);
+  const [processId, setProcessId] = useState(null);
+  const [calculationStarted, setCalculationStarted] = useState(false);
 
   const fetchOrganizations = useCallback(async () => {
-    // ... существующий код ...
+    setOrganizationsLoading(true);
+    setApiError(null);
+    try {
+      const response = await getOrganizations();
+      // Проверяем формат ответа и преобразуем если нужно
+      const orgs = Array.isArray(response) ? response : response.data || [];
+      setOrganizations(orgs);
+      setServerStatus(getServerStatus());
+      
+      if (!getServerStatus()) {
+        message.info('Используются тестовые данные организаций');
+      }
+    } catch (error) {
+      const errorMessage = 'Ошибка при загрузке организаций. Используются тестовые данные.';
+      message.warning(errorMessage);
+      setApiError(errorMessage);
+      // В случае ошибки используем тестовые данные
+      setOrganizations(mockOrganizations);
+      setServerStatus(false);
+      console.error('Fetch organizations error:', error);
+    } finally {
+      setOrganizationsLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -49,48 +70,71 @@ const UserPage = () => {
       return;
     }
 
-    // Сохраняем параметры для расчета
-    setCalculationParams({
-      startDate: period[0].format('YYYY-MM-DD'),
-      endDate: period[1].format('YYYY-MM-DD'),
-      organizationId: organization,
-      organizationName: getSelectedOrganizationName()
-    });
-
-    // Открываем модальное окно с прогрессом
+    // Открываем модальное окно сразу
     setProgressVisible(true);
+    setCalculationStarted(true);
+    setApiError(null);
+    
+    try {
+      // Выполняем запрос на расчет (он будет выполняться в фоне)
+      const response = await calculateReport({
+        startDate: period[0].format('YYYY-MM-DD'),
+        endDate: period[1].format('YYYY-MM-DD')
+      }, organization);
+      
+      // Если сервер вернул ID процесса, сохраняем его для модального окна
+      if (response.processId) {
+        setProcessId(response.processId);
+      } else {
+        // Если сервер не вернул processId, генерируем свой для демонстрации
+        setProcessId('demo_' + Date.now());
+      }
+      
+      // Проверяем формат ответа и сохраняем данные
+      const reportData = Array.isArray(response) ? response : response.data || [];
+      setData(reportData);
+      
+      if (reportData.length === 0) {
+        message.info('Нет данных за выбранный период');
+      } else {
+        const source = getServerStatus() ? 'сервера' : 'тестовых данных';
+        message.success(`Данные успешно загружены с ${source} (${reportData.length} записей)`);
+        setServerStatus(getServerStatus());
+      }
+      
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || 'Ошибка при расчете отчета';
+      message.error(errorMessage);
+      setApiError(errorMessage);
+      console.error('Calculate report error:', error);
+      
+      // В случае ошибки все равно генерируем демо processId для модального окна
+      setProcessId('demo_error_' + Date.now());
+    }
   };
 
-  // Обработчик завершения/отмены расчета
-  const handleCalculationComplete = async (canceled = false) => {
+  // Обработчик закрытия модального окна
+  const handleProgressClose = (success = false) => {
     setProgressVisible(false);
     
-    if (!canceled) {
-      // Если расчет не отменен, выполняем фактический запрос на сервер
-      setLoading(true);
-      try {
-        const response = await calculateReport({
-          startDate: period[0].format('YYYY-MM-DD'),
-          endDate: period[1].format('YYYY-MM-DD')
-        }, organization);
-        
-        const reportData = Array.isArray(response) ? response : response.data || [];
-        setData(reportData);
-        
-        if (reportData.length === 0) {
-          message.info('Нет данных за выбранный период');
-        } else {
-          const source = getServerStatus() ? 'сервера' : 'тестовых данных';
-          message.success(`Данные успешно загружены с ${source} (${reportData.length} записей)`);
-        }
-      } catch (error) {
-        const errorMessage = error.response?.data?.message || 'Ошибка при расчете отчета';
-        message.error(errorMessage);
-        setApiError(errorMessage);
-      } finally {
-        setLoading(false);
-      }
+    if (success) {
+      // Можно добавить дополнительную логику при успешном завершении
+      message.success('Все этапы расчета успешно выполнены');
     }
+    
+    // Сбрасываем processId после закрытия
+    setTimeout(() => {
+      setProcessId(null);
+      setCalculationStarted(false);
+    }, 300);
+  };
+
+  // Обработчик отмены расчета пользователем
+  const handleProgressCancel = () => {
+    setProgressVisible(false);
+    setProcessId(null);
+    setCalculationStarted(false);
+    message.info('Расчет отменен пользователем');
   };
 
   const handleRetry = () => {
@@ -98,9 +142,11 @@ const UserPage = () => {
   };
 
   const disabledDate = (current) => {
+    // Запрет на выбор будущих дат
     return current && current > dayjs().endOf('day');
   };
 
+  // Получаем название выбранной организации
   const getSelectedOrganizationName = () => {
     if (!organization) return '';
     const org = organizations.find(o => o.id === organization);
@@ -110,7 +156,6 @@ const UserPage = () => {
   return (
     <>
       <Space orientation="vertical" size="large" style={{ width: '100%', padding: '24px' }}>
-        {/* Существующий код карточки параметров */}
         <Card 
           title={
             <Space>
@@ -214,7 +259,6 @@ const UserPage = () => {
           </Space>
         </Card>
 
-        {/* Существующий код карточки результатов */}
         {data.length > 0 && (
           <Card 
             title={
@@ -255,10 +299,13 @@ const UserPage = () => {
       {/* Модальное окно прогресса расчета */}
       <CalculationProgress
         visible={progressVisible}
-        onClose={() => handleCalculationComplete(true)}
-        onCancel={() => handleCalculationComplete(true)}
-        calculationParams={calculationParams}
-        pollingInterval={2000}
+        onClose={handleProgressClose}
+        onCancel={handleProgressCancel}
+        processId={processId}
+        pollingInterval={2000} // Интервал опроса сервера (в мс)
+        autoStart={calculationStarted} // Флаг для автоматического запуска опроса
+        autoCloseOnSuccess={true} // Автоматически закрывать при успешном завершении всех этапов
+        autoCloseDelay={1500} // Закрыть через 1.5 секунды после успешного завершения
       />
     </>
   );
