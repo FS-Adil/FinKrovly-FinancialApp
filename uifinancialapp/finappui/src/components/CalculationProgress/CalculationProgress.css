@@ -1,0 +1,171 @@
+/* components/CalculationProgress/CalculationProgress.css */
+
+.calculation-progress-modal .ant-modal-body {
+  padding: 24px;
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.progress-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.overall-progress {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 16px;
+  background: #f5f5f5;
+  border-radius: 8px;
+}
+
+.progress-info {
+  flex: 1;
+}
+
+.progress-info h4 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.progress-info p {
+  margin: 0;
+  color: #666;
+}
+
+.stages-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.stages-list h4 {
+  margin: 0;
+  font-size: 14px;
+  color: #666;
+}
+
+.stage-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  transition: all 0.3s;
+}
+
+.stage-item:hover {
+  border-color: #1890ff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.09);
+}
+
+.stage-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.stage-number {
+  font-weight: 500;
+  color: #999;
+}
+
+.stage-name {
+  font-weight: 500;
+}
+
+.stage-icon {
+  font-size: 16px;
+  margin-left: 8px;
+}
+
+.stage-icon.success {
+  color: #52c41a;
+}
+
+.stage-icon.error {
+  color: #f5222d;
+}
+
+.stage-icon.pending {
+  color: #faad14;
+}
+
+.stage-icon.waiting {
+  color: #d9d9d9;
+}
+
+.stage-progress {
+  margin: 4px 0 0 0;
+}
+
+.stage-error {
+  margin-top: 8px;
+  font-size: 12px;
+}
+
+.error-alert {
+  margin: 8px 0;
+}
+
+.process-info {
+  margin-top: 16px;
+  padding: 12px;
+  background: #fafafa;
+  border-radius: 4px;
+  text-align: center;
+  color: #999;
+}
+
+.process-info small {
+  font-size: 12px;
+}
+
+.modal-title {
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.status-tag {
+  margin-left: 8px;
+}
+
+/* Анимации */
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.stage-item[data-status="pending"] {
+  animation: pulse 2s infinite;
+}
+
+/* Адаптивность */
+@media (max-width: 480px) {
+  .overall-progress {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .stage-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .stage-header .ant-space {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
