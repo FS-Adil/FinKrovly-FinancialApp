@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, DatePicker, Select, Button, Space, message, Alert, Spin, Badge, Tooltip, Tag } from 'antd';
 import { SearchOutlined, ReloadOutlined, WarningOutlined } from '@ant-design/icons';
 import DataTable from '../components/Tables/DataTable';
@@ -19,7 +19,6 @@ const UserPage = () => {
   const [organization, setOrganization] = useState(null);
   const [organizations, setOrganizations] = useState([]);
   const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [organizationsLoading, setOrganizationsLoading] = useState(false);
   const [apiError, setApiError] = useState(null);
   const [serverStatus, setServerStatus] = useState(true);
@@ -28,13 +27,33 @@ const UserPage = () => {
   const [progressVisible, setProgressVisible] = useState(false);
   const [processId, setProcessId] = useState(null);
   const [calculationStarted, setCalculationStarted] = useState(false);
+  
+  // Новое состояние для блокировки кнопки во время запроса
+  const [isRequestInProgress, setIsRequestInProgress] = useState(false);
+  
+  // Ref для отслеживания монтирования компонента
+  const isMounted = useRef(true);
+  
+  // Ref для хранения текущего запроса (для возможности отмены)
+  const currentRequest = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+      // Отменяем запрос при размонтировании
+      if (currentRequest.current) {
+        currentRequest.current.abort();
+      }
+    };
+  }, []);
 
   const fetchOrganizations = useCallback(async () => {
     setOrganizationsLoading(true);
     setApiError(null);
     try {
       const response = await getOrganizations();
-      // Проверяем формат ответа и преобразуем если нужно
+      if (!isMounted.current) return;
+      
       const orgs = Array.isArray(response) ? response : response.data || [];
       setOrganizations(orgs);
       setServerStatus(getServerStatus());
@@ -43,15 +62,18 @@ const UserPage = () => {
         message.info('Используются тестовые данные организаций');
       }
     } catch (error) {
+      if (!isMounted.current) return;
+      
       const errorMessage = 'Ошибка при загрузке организаций. Используются тестовые данные.';
       message.warning(errorMessage);
       setApiError(errorMessage);
-      // В случае ошибки используем тестовые данные
       setOrganizations(mockOrganizations);
       setServerStatus(false);
       console.error('Fetch organizations error:', error);
     } finally {
-      setOrganizationsLoading(false);
+      if (isMounted.current) {
+        setOrganizationsLoading(false);
+      }
     }
   }, []);
 
@@ -70,27 +92,36 @@ const UserPage = () => {
       return;
     }
 
-    // Открываем модальное окно сразу
-    setProgressVisible(true);
-    setCalculationStarted(true);
+    // Блокируем кнопку ДО начала запроса
+    setIsRequestInProgress(true);
     setApiError(null);
     
+    // Открываем модальное окно
+    setProgressVisible(true);
+    setCalculationStarted(true);
+    
+    // Создаем AbortController для возможности отмены запроса
+    const abortController = new AbortController();
+    currentRequest.current = abortController;
+    
     try {
-      // Выполняем запрос на расчет (он будет выполняться в фоне)
+      // Выполняем запрос на расчет
       const response = await calculateReport({
         startDate: period[0].format('YYYY-MM-DD'),
         endDate: period[1].format('YYYY-MM-DD')
-      }, organization);
+      }, organization, { signal: abortController.signal });
       
-      // Если сервер вернул ID процесса, сохраняем его для модального окна
+      // Проверяем, не размонтирован ли компонент
+      if (!isMounted.current) return;
+      
+      // Если сервер вернул ID процесса, сохраняем его
       if (response.processId) {
         setProcessId(response.processId);
       } else {
-        // Если сервер не вернул processId, генерируем свой для демонстрации
         setProcessId('demo_' + Date.now());
       }
       
-      // Проверяем формат ответа и сохраняем данные
+      // Сохраняем данные
       const reportData = Array.isArray(response) ? response : response.data || [];
       setData(reportData);
       
@@ -103,13 +134,27 @@ const UserPage = () => {
       }
       
     } catch (error) {
+      // Игнорируем ошибки отмененного запроса
+      if (error.name === 'AbortError' || error.message === 'canceled') {
+        console.log('Запрос был отменен');
+        return;
+      }
+      
+      if (!isMounted.current) return;
+      
       const errorMessage = error.response?.data?.message || 'Ошибка при расчете отчета';
       message.error(errorMessage);
       setApiError(errorMessage);
       console.error('Calculate report error:', error);
       
-      // В случае ошибки все равно генерируем демо processId для модального окна
+      // Генерируем демо processId для модального окна
       setProcessId('demo_error_' + Date.now());
+    } finally {
+      // Разблокируем кнопку ТОЛЬКО после получения ответа
+      if (isMounted.current) {
+        setIsRequestInProgress(false);
+        currentRequest.current = null;
+      }
     }
   };
 
@@ -118,23 +163,39 @@ const UserPage = () => {
     setProgressVisible(false);
     
     if (success) {
-      // Можно добавить дополнительную логику при успешном завершении
       message.success('Все этапы расчета успешно выполнены');
     }
     
     // Сбрасываем processId после закрытия
     setTimeout(() => {
-      setProcessId(null);
-      setCalculationStarted(false);
+      if (isMounted.current) {
+        setProcessId(null);
+        setCalculationStarted(false);
+      }
     }, 300);
   };
 
   // Обработчик отмены расчета пользователем
   const handleProgressCancel = () => {
     setProgressVisible(false);
-    setProcessId(null);
-    setCalculationStarted(false);
-    message.info('Расчет отменен пользователем');
+    
+    // Отменяем текущий запрос, если он еще выполняется
+    if (currentRequest.current) {
+      currentRequest.current.abort();
+      currentRequest.current = null;
+    }
+    
+    // НЕ сбрасываем isRequestInProgress здесь!
+    // Запрос все еще может выполняться в фоне
+    
+    setTimeout(() => {
+      if (isMounted.current) {
+        setProcessId(null);
+        setCalculationStarted(false);
+      }
+    }, 300);
+    
+    message.info('Модальное окно закрыто, расчет продолжается в фоне');
   };
 
   const handleRetry = () => {
@@ -142,11 +203,9 @@ const UserPage = () => {
   };
 
   const disabledDate = (current) => {
-    // Запрет на выбор будущих дат
     return current && current > dayjs().endOf('day');
   };
 
-  // Получаем название выбранной организации
   const getSelectedOrganizationName = () => {
     if (!organization) return '';
     const org = organizations.find(o => o.id === organization);
@@ -173,6 +232,7 @@ const UserPage = () => {
               icon={<ReloadOutlined />} 
               onClick={handleRetry}
               size="small"
+              disabled={isRequestInProgress} // Блокируем во время запроса
             >
               Обновить список
             </Button>
@@ -211,6 +271,7 @@ const UserPage = () => {
                 placeholder={['Дата начала', 'Дата окончания']}
                 disabledDate={disabledDate}
                 allowClear
+                disabled={isRequestInProgress} // Блокируем во время запроса
               />
             </div>
             
@@ -236,6 +297,7 @@ const UserPage = () => {
                 notFoundContent={organizationsLoading ? <Spin size="small" /> : 'Нет организаций'}
                 allowClear
                 value={organization}
+                disabled={isRequestInProgress} // Блокируем во время запроса
               >
                 {organizations.map(org => (
                   <Option key={org.id} value={org.id}>
@@ -249,12 +311,12 @@ const UserPage = () => {
               type="primary"
               icon={<SearchOutlined />}
               onClick={handleCalculate}
-              loading={loading}
+              loading={isRequestInProgress} // Используем для индикации загрузки
               size="large"
               block
-              disabled={!period || !period[0] || !period[1] || !organization || organizationsLoading}
+              disabled={!period || !period[0] || !period[1] || !organization || organizationsLoading || isRequestInProgress}
             >
-              {loading ? 'Расчет...' : 'Рассчитать'}
+              {isRequestInProgress ? 'Расчет...' : 'Рассчитать'}
             </Button>
           </Space>
         </Card>
@@ -278,7 +340,7 @@ const UserPage = () => {
           >
             <DataTable 
               data={data} 
-              loading={loading} 
+              loading={isRequestInProgress} // Индикатор загрузки таблицы
             />
             <div style={{ marginTop: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span>
@@ -302,10 +364,10 @@ const UserPage = () => {
         onClose={handleProgressClose}
         onCancel={handleProgressCancel}
         processId={processId}
-        pollingInterval={2000} // Интервал опроса сервера (в мс)
-        autoStart={calculationStarted} // Флаг для автоматического запуска опроса
-        autoCloseOnSuccess={true} // Автоматически закрывать при успешном завершении всех этапов
-        autoCloseDelay={1500} // Закрыть через 1.5 секунды после успешного завершения
+        pollingInterval={2000}
+        autoStart={calculationStarted}
+        autoCloseOnSuccess={true}
+        autoCloseDelay={1500}
       />
     </>
   );
