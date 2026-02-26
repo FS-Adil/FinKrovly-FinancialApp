@@ -127,6 +127,8 @@ const generateMockReportData = (startDate, endDate, organizationId) => {
       id: `${organizationId}-${i + 1}-${Date.now()}`,
       productId: `PRD-${(i + 1).toString().padStart(6, '0')}`,
       name: `Товар ${i + 1}`,
+      characteristic: `Характеристика ${i + 1}`,
+      batch: `Партия ${i + 1}`,
       category: PRODUCT_CATEGORIES[Math.floor(Math.random() * PRODUCT_CATEGORIES.length)],
       quantity: Math.floor(Math.random() * 1000) + 1,
       price: parseFloat((Math.random() * 10000 + 100).toFixed(2)),
@@ -348,7 +350,7 @@ export const deleteOrganization = async (id) => {
  * @param {string} organizationId - ID организации
  * @returns {Array} - преобразованные данные в формате generateMockReportData
  */
-const transformServerData = (serverData, startDate, endDate, organizationId) => {
+const transformServerData = (serverData, startDate, endDate, organizationId, orgName) => {
   // Если нет данных с сервера, возвращаем пустой массив
   if (!serverData || !Array.isArray(serverData) || serverData.length === 0) {
     console.warn('Нет данных с сервера для преобразования');
@@ -361,12 +363,16 @@ const transformServerData = (serverData, startDate, endDate, organizationId) => 
   ];
 
   // Название организации (можно получить с сервера или использовать заглушку)
-  const organizationName = `Организация ${organizationId}`;
+  const organizationName = `${orgName} ${organizationId}`;
 
   // Преобразуем каждый элемент с сервера
   return serverData.map((item, index) => {
     // Проверяем наличие всех необходимых полей
+    const refKey = item['refKey']
+    const number = item['number']
     const name = item['name'];
+    const characteristic = item['characteristic'];
+    const batch = item['batch'];
     const quantity = item['quantity'];
     const price = item['price'];
     const cost = item['cost'];
@@ -384,8 +390,10 @@ const transformServerData = (serverData, startDate, endDate, organizationId) => 
       : 0;
 
     // Генерируем ID и productId (как в оригинале)
-    const id = `${organizationId}-${index + 1}-${Date.now()}`;
-    const productId = `PRD-${(index + 1).toString().padStart(6, '0')}`;
+    // const id = `${organizationId}-${index + 1}-${Date.now()}`;
+    // const productId = `PRD-${(index + 1).toString().padStart(6, '0')}`;
+    const id = refKey;
+    const productId = number;
 
     // Определяем категорию на основе названия товара
     const category = PRODUCT_CATEGORIES[0];
@@ -395,6 +403,8 @@ const transformServerData = (serverData, startDate, endDate, organizationId) => 
       id,
       productId,
       name,
+      characteristic,
+      batch,
       category,
       quantity,
       price,
@@ -456,7 +466,8 @@ export const calculateReport = async (period, organizationId) => {
       response.data, 
       startDate, 
       endDate, 
-      organizationId
+      organizationId,
+      org.name
     );
 
     return {
