@@ -6,7 +6,7 @@ const API_TIMEOUT = parseInt(import.meta.env.REACT_APP_API_TIMEOUT || '10000', 1
 const CACHE_DURATION = parseInt(import.meta.env.REACT_APP_CACHE_DURATION || '30000', 10);
 
 // Базовый URL для API через прокси
-const API_BASE_URL = '/api/v2';
+const API_BASE_URL = '/api/v3';
 
 // Конфигурация axios - убираем baseURL из конфигурации, так как будем использовать полные пути
 const api = axios.create({
