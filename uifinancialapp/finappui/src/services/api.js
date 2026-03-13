@@ -563,3 +563,103 @@ export default {
   resetMockOrganizations,
   apiUtils
 };
+
+/**
+ * Рассчитать себестоимость остатков на складе
+ * @param {Object} params - параметры { date }
+ * @param {string} organizationId - UUID организации
+ */
+export const calculateAssemblyCost = async (params, organizationId) => {
+  const { date } = params;
+  
+  // Валидация даты
+  if (!date) {
+    throw new Error('Не указана дата остатков');
+  }
+
+  try {
+    const response = await api.post(`${API_BASE_URL}/inventory/balance-cost`, {
+      date: dayjs(date).format('YYYY-MM-DD') + 'T23:59:59',
+      organizationId
+    });
+    serverStatus.available = true;
+
+    const org = mockOrganizations.find(o => o.id === organizationId) || { name: 'Тестовая организация' };
+    const transformedData = transformServerData(
+      response.data, 
+      date, 
+      date, 
+      organizationId,
+      org.name
+    );
+
+    return {
+      data: transformedData,
+      meta: {
+        organizationId,
+        organizationName: org.name,
+        date,
+        generatedAt: new Date().toISOString(),
+        totalRecords: transformedData.length,
+        totalCost: transformedData.reduce((sum, item) => sum + item.cost, 0)
+      },
+      processId: `inventory_cost_${Date.now()}`
+    };
+  } catch (error) {
+    console.warn('⚠️ API недоступен, генерируем тестовые данные остатков', error);
+    serverStatus.available = false;
+    
+    const mockData = generateMockBalanceData(date, organizationId);
+    const org = mockOrganizations.find(o => o.id === organizationId) || { name: 'Тестовая организация' };
+    
+    return {
+      data: mockData,
+      meta: {
+        organizationId,
+        organizationName: org.name,
+        date,
+        generatedAt: new Date().toISOString(),
+        totalRecords: mockData.length,
+        totalCost: mockData.reduce((sum, item) => sum + item.cost, 0)
+      },
+      processId: `inventory_cost_mock_${Date.now()}`
+    };
+  }
+};
+
+
+/**
+ * Генерация тестовых данных для остатков на складе
+ * @param {string} date - дата
+ * @param {string} organizationId - ID организации
+ */
+const generateMockBalanceData = (date, organizationId) => {
+  const org = mockOrganizations.find(o => o.id === organizationId) || { 
+    id: organizationId, 
+    name: 'Тестовая организация' 
+  };
+  
+  // Категории товаров
+  const PRODUCT_CATEGORIES = [
+    'Электроника', 'Одежда', 'Продукты', 'Мебель', 'Канцелярия',
+    'Автозапчасти', 'Косметика', 'Книги', 'Игрушки', 'Спорттовары'
+  ];
+
+  const recordCount = Math.floor(Math.random() * 100) + 50; // 50-150 записей
+  
+  return Array.from({ length: recordCount }, (_, i) => {
+    return {
+      id: `${organizationId}-balance-${i + 1}-${Date.now()}`,
+      productId: `PRD-${(i + 1).toString().padStart(6, '0')}`,
+      name: `Товар ${i + 1}`,
+      characteristic: `Характеристика ${Math.floor(Math.random() * 10) + 1}`,
+      batch: `Партия ${Math.floor(Math.random() * 20) + 1}`,
+      category: PRODUCT_CATEGORIES[Math.floor(Math.random() * PRODUCT_CATEGORIES.length)],
+      quantity: Math.floor(Math.random() * 500) + 1,
+      cost: parseFloat((Math.random() * 5000 + 100).toFixed(2)),
+      date,
+      organization: org.name,
+      organizationId: org.id,
+    };
+  });
+};
