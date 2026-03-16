@@ -6,6 +6,7 @@ import MainLayout from './components/Layout/MainLayout';
 import UserPage from './pages/UserPage';
 import AdminPage from './pages/AdminPage';
 import ProtectedRoute from './components/UI/ProtectedRoute';
+import AssemblyCostPage from './pages/AssemblyCostPage';
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
           <Route element={<ProtectedRoute />}>
             <Route element={<MainLayout />}>
               <Route path="/user" element={<UserPage />} />
+              <Route path="/assembly-cost" element={<AssemblyCostPage />} />
               <Route path="/admin" element={
                 <ProtectedRoute requiredRole="admin">
                   <AdminPage />

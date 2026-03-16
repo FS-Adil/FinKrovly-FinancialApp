@@ -563,3 +563,180 @@ export default {
   resetMockOrganizations,
   apiUtils
 };
+
+
+/**
+ * ПРЕОБРАЗОВАТЕЛЬ ДАННЫХ - исправленная версия
+ * @param {Array} serverData - данные с сервера
+ * @param {string} date - дата
+ * @param {string} organizationId - ID организации
+ * @param {string} orgName - название организации
+ * @returns {Array} - преобразованные данные
+ */
+const transformServerDataInventory = (serverData, date, organizationId, orgName) => {
+  // Если нет данных с сервера, возвращаем пустой массив
+  if (!serverData || !Array.isArray(serverData) || serverData.length === 0) {
+    console.warn('Нет данных с сервера для преобразования');
+    return [];
+  }
+
+  console.log('🔄 Преобразование данных сервера:', serverData);
+
+  // Преобразуем каждый элемент с сервера
+  return serverData.map((item, index) => {
+    // Проверяем наличие всех необходимых полей
+    // Используем различные возможные названия полей, которые могут прийти с сервера
+    const name = item['name'] || item['Наименование'] || item['наименование'] || '';
+    const characteristic = item['characteristic'] || item['Характеристика'] || item['характеристика'] || '';
+    const batch = item['batch'] || item['Партия'] || item['партия'] || '';
+    const quantity = item['quantity'] || item['Количество'] || item['количество'] || 0;
+    const cost = item['cost'] || item['Себестоимость'] || item['себестоимость'] || item['price'] || 0;
+    
+    // Генерируем ID, если его нет
+    const id = item['id'] || item['refKey'] || item['ref_key'] || `${organizationId}-${index + 1}-${Date.now()}`;
+    const productId = item['productId'] || item['number'] || item['Номер'] || `PRD-${(index + 1).toString().padStart(6, '0')}`;
+
+    // Возвращаем объект в нужном формате даже с некорректными данными
+    return {
+      id,
+      productId,
+      name: String(name || 'Без названия'),
+      characteristic: String(characteristic || ''),
+      batch: String(batch || ''),
+      quantity: Number(quantity) || 0,
+      cost: Number(cost) || 0,
+      date: date,
+      organization: orgName,
+      organizationId,
+    };
+  }).filter(item => item !== null); // Удаляем null элементы (если вдруг появятся)
+};
+
+/**
+ * Рассчитать себестоимость остатков на складе
+ * @param {Object} params - параметры { date }
+ * @param {string} organizationId - UUID организации
+ */
+export const calculateAssemblyCost = async (params, organizationId) => {
+  const { date } = params;
+  
+  if (!date) {
+    throw new Error('Не указана дата остатков');
+  }
+
+  try {
+    console.log('📤 Отправка запроса на сервер:', {
+      url: `${API_BASE_URL}/inventory/balance-cost`,
+      data: {
+        date: dayjs(date).format('YYYY-MM-DD') + 'T23:59:59',
+        organizationId
+      }
+    });
+
+    const response = await api.post(`${API_BASE_URL}/inventory/balance-cost`, {
+      date: dayjs(date).format('YYYY-MM-DD') + 'T23:59:59',
+      organizationId
+    });
+    
+    serverStatus.available = true;
+    
+    console.log('📦 Ответ от сервера:', response.data);
+
+    const org = mockOrganizations.find(o => o.id === organizationId) || { 
+      name: 'Тестовая организация' 
+    };
+    
+    // Преобразуем данные с сервера
+    let transformedData = [];
+    
+    if (response.data && Array.isArray(response.data)) {
+      transformedData = transformServerDataInventory(
+        response.data, 
+        date, 
+        organizationId,
+        org.name
+      );
+    } else if (response.data && response.data.data && Array.isArray(response.data.data)) {
+      transformedData = transformServerDataInventory(
+        response.data.data, 
+        date, 
+        organizationId,
+        org.name
+      );
+    } else if (Array.isArray(response.data)) {
+      transformedData = transformServerDataInventory(
+        response.data, 
+        date, 
+        organizationId,
+        org.name
+      );
+    }
+
+    console.log('✅ Преобразованные данные:', transformedData.length, 'записей');
+
+    return {
+      data: transformedData,
+      meta: {
+        organizationId,
+        organizationName: org.name,
+        date,
+        generatedAt: new Date().toISOString(),
+        totalRecords: transformedData.length,
+        totalCost: transformedData.reduce((sum, item) => sum + (item.cost || 0), 0)
+      },
+      processId: `inventory_cost_${Date.now()}`
+    };
+  } catch (error) {
+    console.warn('⚠️ API недоступен, генерируем тестовые данные остатков', error);
+    serverStatus.available = false;
+    
+    const mockData = generateMockBalanceData(date, organizationId);
+    const org = mockOrganizations.find(o => o.id === organizationId) || { 
+      name: 'Тестовая организация' 
+    };
+    
+    return {
+      data: mockData,
+      meta: {
+        organizationId,
+        organizationName: org.name,
+        date,
+        generatedAt: new Date().toISOString(),
+        totalRecords: mockData.length,
+        totalCost: mockData.reduce((sum, item) => sum + item.cost, 0)
+      },
+      processId: `inventory_cost_mock_${Date.now()}`
+    };
+  }
+};
+
+/**
+ * Генерация тестовых данных для остатков на складе
+ */
+const generateMockBalanceData = (date, organizationId) => {
+  const org = mockOrganizations.find(o => o.id === organizationId) || { 
+    id: organizationId, 
+    name: 'Тестовая организация' 
+  };
+  
+  const PRODUCT_CATEGORIES = [
+    'Электроника', 'Одежда', 'Продукты', 'Мебель', 'Канцелярия',
+    'Автозапчасти', 'Косметика', 'Книги', 'Игрушки', 'Спорттовары'
+  ];
+
+  const recordCount = Math.floor(Math.random() * 100) + 50;
+  
+  return Array.from({ length: recordCount }, (_, i) => ({
+    id: `${organizationId}-balance-${i + 1}-${Date.now()}`,
+    productId: `PRD-${(i + 1).toString().padStart(6, '0')}`,
+    name: `Товар ${i + 1}`,
+    characteristic: `Характеристика ${Math.floor(Math.random() * 10) + 1}`,
+    batch: `Партия ${Math.floor(Math.random() * 20) + 1}`,
+    category: PRODUCT_CATEGORIES[Math.floor(Math.random() * PRODUCT_CATEGORIES.length)],
+    quantity: Math.floor(Math.random() * 500) + 1,
+    cost: parseFloat((Math.random() * 5000 + 100).toFixed(2)),
+    date,
+    organization: org.name,
+    organizationId: org.id,
+  }));
+};

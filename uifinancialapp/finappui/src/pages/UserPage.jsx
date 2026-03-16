@@ -330,7 +330,7 @@ const UserPage = () => {
         >
           {apiError && (
             <Alert
-              message="Ошибка"
+              title="Ошибка"
               description={apiError}
               type="error"
               showIcon
@@ -342,7 +342,7 @@ const UserPage = () => {
           
           {!serverStatus && !apiError && (
             <Alert
-              message="Информация"
+              title="Информация"
               description="Вы работаете с тестовыми данными. Для работы с реальными данными убедитесь, что сервер доступен."
               type="info"
               showIcon

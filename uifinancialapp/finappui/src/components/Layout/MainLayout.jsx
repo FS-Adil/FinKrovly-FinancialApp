@@ -2,9 +2,10 @@ import React from 'react';
 import { Layout, Menu, Button } from 'antd';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { 
-  UserOutlined, 
-  TeamOutlined, 
-  LogoutOutlined 
+  LogoutOutlined,
+  ShoppingOutlined,
+  ToolOutlined,
+  CalculatorOutlined  // Добавляем иконку для склада
 } from '@ant-design/icons';
 import { useAuth } from '../../context/AuthContext';
 
@@ -18,16 +19,21 @@ const MainLayout = () => {
   const menuItems = [
     {
       key: '/user',
-      icon: <UserOutlined />,
-      label: 'Пользовательская страница',
+      icon: <CalculatorOutlined />,
+      label: 'Валовая прибль',
+    },
+    {
+      key: '/assembly-cost',  // Новый пункт меню
+      icon: <ShoppingOutlined />,
+      label: 'Остатки на складе',
     }
   ];
 
   if (user?.role === 'admin') {
     menuItems.push({
       key: '/admin',
-      icon: <TeamOutlined />,
-      label: 'Админ панель',
+      icon: <ToolOutlined />,
+      label: 'Настройки',
     });
   }
 
