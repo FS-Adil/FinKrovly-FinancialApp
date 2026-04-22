@@ -198,6 +198,33 @@ export const getOrganizations = async (forceRefresh = false, signal = null) => {
 };
 
 /**
+ * Получить список организаций
+ * @param {boolean} forceRefresh - игнорировать кэш
+ * @param {AbortSignal} signal - сигнал для отмены запроса
+ */
+export const getOrganizationsNew = async (forceRefresh = false, signal = null) => {
+
+  clearCache('organizations');
+
+  try {
+    // Используем полный путь через прокси
+    const response = await api.get(`${API_BASE_URL}/organizations`, { signal });
+    
+    const data = response.data;
+    setCache('organizations', data);
+    return data;
+  } catch (error) {
+    
+    console.warn('⚠️ API недоступен, возвращаем тестовые данные организаций');
+    
+    // ВАЖНО: Возвращаем КОПИЮ актуальных мок-данных
+    const dataToReturn = JSON.parse(JSON.stringify(mockOrganizations));
+    return dataToReturn;
+  }
+};
+
+
+/**
  * Получить организацию по ID
  * @param {string} id - UUID организации
  */
@@ -462,7 +489,17 @@ export const calculateReport = async (period, organizationId) => {
     });
     serverStatus.available = true;
 
-    const org = mockOrganizations.find(o => o.id === organizationId) || { name: 'Тестовая организация' };
+    // Сначала получаем данные организации
+    const organizations = await getOrganizationsNew();
+
+    let org = organizations.find(o => o.id === organizationId);
+    
+    if (!org) {
+      console.warn(`⚠️ Организация с ID ${organizationId} не найдена`);
+      org = { id: organizationId, name: 'Тестовая организация' };
+    } else {
+      console.log('✅ Организация найдена через getOrganizations:', org);
+    }
 
     const transformedData = transformServerData(
       response.data, 
