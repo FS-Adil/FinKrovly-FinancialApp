@@ -27,6 +27,13 @@ const DataTable = ({ data, loading }) => {
       fixed: 'left',
     },
     {
+      title: 'Единица Измерения',
+      dataIndex: 'measurementUnit',
+      key: 'measurementUnit',
+      width: 100,
+      fixed: 'left',
+    },
+    {
       title: 'Количество',
       dataIndex: 'quantity',
       key: 'quantity',
@@ -83,7 +90,10 @@ const DataTable = ({ data, loading }) => {
         <Button 
           type="primary" 
           icon={<FileExcelOutlined />}
-          onClick={() => exportToExcel(data, 'report.xlsx')}
+          onClick={() => exportToExcel(
+            data,
+            // 'report.xlsx'
+          )}
           disabled={!data.length}
         >
           Экспорт в Excel

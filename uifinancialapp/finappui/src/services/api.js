@@ -48,8 +48,6 @@ export const getInitialMockOrganizations = () => [
   { id: '11111111-1111-1111-1111-111111111111', name: 'ООО "Ромашка"', createdAt: '2024-01-01T10:00:00Z', updatedAt: '2024-01-01T10:00:00Z' },
   { id: '22222222-2222-2222-2222-222222222222', name: 'АО "ТехноПром"', createdAt: '2024-01-02T11:30:00Z', updatedAt: '2024-01-02T11:30:00Z' },
   { id: '33333333-3333-3333-3333-333333333333', name: 'ООО "Альянс"', createdAt: '2024-01-03T09:15:00Z', updatedAt: '2024-01-03T09:15:00Z' },
-  { id: '44444444-4444-4444-4444-444444444444', name: 'ИП Иванов', createdAt: '2024-01-04T14:20:00Z', updatedAt: '2024-01-04T14:20:00Z' },
-  { id: '55555555-5555-5555-5555-555555555555', name: 'ЗАО "СтройИнвест"', createdAt: '2024-01-05T16:45:00Z', updatedAt: '2024-01-05T16:45:00Z' },
 ];
 
 // Создаем изменяемый массив для мок-данных
@@ -129,7 +127,8 @@ const generateMockReportData = (startDate, endDate, organizationId) => {
       name: `Товар ${i + 1}`,
       characteristic: `Характеристика ${i + 1}`,
       batch: `Партия ${i + 1}`,
-      category: PRODUCT_CATEGORIES[Math.floor(Math.random() * PRODUCT_CATEGORIES.length)],
+      measurementUnit: `Шт ${i + 1}`,
+      // category: PRODUCT_CATEGORIES[Math.floor(Math.random() * PRODUCT_CATEGORIES.length)],
       quantity: Math.floor(Math.random() * 1000) + 1,
       price: parseFloat((Math.random() * 10000 + 100).toFixed(2)),
       cost: parseFloat((Math.random() * 8000 + 50).toFixed(2)),
@@ -363,7 +362,7 @@ const transformServerData = (serverData, startDate, endDate, organizationId, org
   ];
 
   // Название организации (можно получить с сервера или использовать заглушку)
-  const organizationName = `${orgName} ${organizationId}`;
+  const organizationName = `${orgName}`;
 
   // Преобразуем каждый элемент с сервера
   return serverData.map((item, index) => {
@@ -373,6 +372,7 @@ const transformServerData = (serverData, startDate, endDate, organizationId, org
     const name = item['name'];
     const characteristic = item['characteristic'];
     const batch = item['batch'];
+    const measurementUnit = item['measurementUnit']
     const quantity = item['quantity'];
     const price = item['price'];
     const cost = item['cost'];
@@ -405,6 +405,7 @@ const transformServerData = (serverData, startDate, endDate, organizationId, org
       name,
       characteristic,
       batch,
+      measurementUnit,
       category,
       quantity,
       price,
@@ -462,6 +463,7 @@ export const calculateReport = async (period, organizationId) => {
     serverStatus.available = true;
 
     const org = mockOrganizations.find(o => o.id === organizationId) || { name: 'Тестовая организация' };
+
     const transformedData = transformServerData(
       response.data, 
       startDate, 
