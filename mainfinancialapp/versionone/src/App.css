@@ -1,0 +1,910 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+}
+
+.app {
+  display: flex;
+  height: 100vh;
+  background: #f0f2f5;
+}
+
+/* ========== SIDEBAR ========== */
+.sidebar {
+  width: 280px;
+  background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+}
+
+.logo {
+  padding: 28px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.logo h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.5px;
+}
+
+.logo-subtitle {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.4);
+  margin-top: 4px;
+}
+
+.menu {
+  flex: 1;
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow-y: auto;
+}
+
+.menu-item {
+  width: 100%;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  border-radius: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.95rem;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+}
+
+.menu-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  transform: translateX(4px);
+}
+
+.menu-item.active {
+  background: rgba(102, 126, 234, 0.2);
+  color: #fff;
+  border-left: 3px solid #667eea;
+}
+
+.menu-icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.menu-text {
+  flex: 1;
+}
+
+.loaded-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  background: #10b981;
+  border-radius: 50%;
+  font-size: 11px;
+  color: white;
+  animation: fadeInScale 0.3s ease;
+}
+
+.loading-dot {
+  color: #f59e0b;
+  font-size: 10px;
+  animation: pulse 1.5s ease infinite;
+}
+
+.sidebar-footer {
+  padding: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.progress-bar {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  transition: width 0.3s ease;
+  border-radius: 2px;
+}
+
+.status-stats {
+  text-align: center;
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* ========== CONTENT ========== */
+.content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.header {
+  background: #fff;
+  padding: 20px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #e4e6eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  flex-shrink: 0;
+}
+
+.header-info h1 {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: #1a1a2e;
+  margin-bottom: 6px;
+}
+
+.header-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.meta-badge {
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  background: #e8eaf6;
+  color: #5a67d8;
+  border-radius: 20px;
+  font-weight: 500;
+}
+
+.meta-url {
+  font-size: 0.75rem;
+  color: #718096;
+  font-family: 'Monaco', 'Menlo', monospace;
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-primary {
+  background: #667eea;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #5a67d8;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.btn-secondary {
+  background: #e2e8f0;
+  color: #4a5568;
+}
+
+.btn-secondary:hover {
+  background: #cbd5e0;
+  transform: translateY(-1px);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+/* ========== IFRAME CONTAINER ========== */
+.iframe-container {
+  flex: 1;
+  background: #fff;
+  position: relative;
+  overflow: auto;
+}
+
+.embedded-app-container {
+  width: 100%;
+  position: relative;
+  transition: opacity 0.2s ease;
+}
+
+.embedded-app-container.active {
+  opacity: 1;
+}
+
+.embedded-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+/* ========== LOADER ========== */
+.iframe-loader {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  z-index: 10;
+  background: white;
+  padding: 32px;
+  border-radius: 16px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  min-width: 280px;
+}
+
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #667eea;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 16px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.iframe-loader p {
+  color: #2d3748;
+  font-size: 1rem;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.loader-url {
+  font-size: 0.75rem;
+  color: #a0aec0;
+  font-family: monospace;
+}
+
+/* ========== ERROR ========== */
+.iframe-error {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  z-index: 10;
+  background: white;
+  padding: 32px;
+  border-radius: 16px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  min-width: 320px;
+}
+
+.iframe-error p {
+  margin-bottom: 12px;
+}
+
+.iframe-error p:first-child {
+  color: #e53e3e;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.error-url {
+  font-size: 0.8rem;
+  color: #718096;
+  font-family: monospace;
+  background: #f7fafc;
+  padding: 4px 8px;
+  border-radius: 6px;
+  display: inline-block;
+}
+
+.error-hint {
+  font-size: 0.75rem;
+  color: #a0aec0;
+  margin-top: 8px;
+}
+
+.iframe-error button {
+  margin-top: 16px;
+  padding: 8px 20px;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.iframe-error button:hover {
+  background: #5a67d8;
+  transform: translateY(-1px);
+}
+
+/* ========== ANIMATIONS ========== */
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+/* ========== SCROLLBAR ========== */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e0;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a0aec0;
+}
+
+/* ========== RESPONSIVE ========== */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 80px;
+  }
+  
+  .logo h2 {
+    font-size: 0;
+  }
+  
+  .logo h2::before {
+    content: '🏢';
+    font-size: 24px;
+  }
+  
+  .logo-subtitle {
+    display: none;
+  }
+  
+  .menu-text {
+    display: none;
+  }
+  
+  .menu-item {
+    justify-content: center;
+    padding: 12px;
+  }
+  
+  .menu-icon {
+    margin: 0;
+  }
+  
+  .loaded-badge,
+  .loading-dot {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+  }
+  
+  .sidebar-footer {
+    display: none;
+  }
+  
+  .header {
+    padding: 16px 20px;
+  }
+  
+  .header-info h1 {
+    font-size: 1.3rem;
+  }
+  
+  .meta-url {
+    display: none;
+  }
+  
+  .btn {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+  }
+}
+
+/* Добавьте или обновите эти стили в вашем App.css */
+
+.iframe-container {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: #f5f5f5;
+  width: 100%;
+  max-width: 100%;
+}
+
+.embedded-app-container.active {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+}
+
+.embedded-iframe {
+  width: 100%;
+  max-width: 100%;
+  border: none;
+  display: block;
+  overflow: auto;
+}
+
+/* Стили для лоадера */
+/* .iframe-loader {
+  position: relative;
+  width: 100%;
+  min-height: 400px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border-radius: 8px;
+  padding: 40px 20px;
+  text-align: center;
+} */
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #3498db;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* .iframe-loader p {
+  margin: 10px 0;
+  color: #666;
+  font-size: 14px;
+} */
+
+.loader-url {
+  font-family: monospace;
+  font-size: 12px;
+  color: #999;
+  word-break: break-all;
+  max-width: 100%;
+}
+
+.loader-attempts {
+  font-size: 12px;
+  color: #999;
+}
+
+/* Стили для ошибки */
+.iframe-error {
+  position: relative;
+  width: 100%;
+  min-height: 400px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #fff3f3;
+  border-radius: 8px;
+  padding: 40px 20px;
+  text-align: center;
+  border: 1px solid #ffcdd2;
+}
+
+.iframe-error p {
+  margin: 10px 0;
+  color: #d32f2f;
+}
+
+.error-url {
+  font-family: monospace;
+  font-size: 12px;
+  color: #d32f2f;
+  word-break: break-all;
+  max-width: 100%;
+}
+
+.error-hint {
+  font-size: 12px;
+  color: #f44336;
+  background: #ffebee;
+  padding: 8px 12px;
+  border-radius: 4px;
+  margin-top: 15px;
+}
+
+.iframe-error button {
+  margin-top: 20px;
+  padding: 8px 16px;
+  background: #d32f2f;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.3s;
+}
+
+.iframe-error button:hover {
+  background: #b71c1c;
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+  .iframe-loader,
+  .iframe-error {
+    min-height: 300px;
+    padding: 20px;
+  }
+  
+  .spinner {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .iframe-loader p,
+  .iframe-error p {
+    font-size: 12px;
+  }
+}
+
+/* Добавьте или обновите эти стили */
+
+.iframe-container {
+  flex: 1;
+  position: relative;
+  overflow: auto; /* Меняем на auto для скролла */
+  background: #f5f5f5;
+  width: 100%;
+  max-width: 100%;
+  height: calc(100vh - 80px); /* Фиксированная высота для контейнера */
+}
+
+.embedded-app-container {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+/* Ограничиваем максимальную высоту контейнера */
+.embedded-app-container.active {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  max-height: calc(100vh - 100px); /* Максимальная высота - не больше экрана */
+  overflow: auto; /* Добавляем скролл если контент большой */
+}
+
+.embedded-iframe {
+  width: 100%;
+  max-width: 100%;
+  border: none;
+  display: block;
+  min-height: 400px; /* Минимальная высота для iframe */
+}
+
+/* Стили для лоадера - ограничиваем высоту */
+.iframe-loader_ {
+  position: relative;
+  width: 100%;
+  height: 400px; /* Фиксированная высота вместо min-height */
+  max-height: 70vh; /* Максимальная высота 70% от экрана */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border-radius: 8px;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+/* Стили для ошибки */
+.iframe-error {
+  position: relative;
+  width: 100%;
+  height: 400px; /* Фиксированная высота */
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #fff3f3;
+  border-radius: 8px;
+  padding: 40px 20px;
+  text-align: center;
+  border: 1px solid #ffcdd2;
+}
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #3498db;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* .iframe-loader p,
+.iframe-error p {
+  margin: 10px 0;
+  color: #666;
+  font-size: 14px;
+} */
+
+.loader-url,
+.error-url {
+  font-family: monospace;
+  font-size: 12px;
+  color: #999;
+  word-break: break-all;
+  max-width: 100%;
+}
+
+.error-url {
+  color: #d32f2f;
+}
+
+.error-hint {
+  font-size: 12px;
+  color: #f44336;
+  background: #ffebee;
+  padding: 8px 12px;
+  border-radius: 4px;
+  margin-top: 15px;
+  max-width: 90%;
+}
+
+.iframe-error button {
+  margin-top: 20px;
+  padding: 8px 16px;
+  background: #d32f2f;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.3s;
+}
+
+.iframe-error button:hover {
+  background: #b71c1c;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .iframe-loader,
+  .iframe-error {
+    height: 300px;
+  }
+  
+  .spinner {
+    width: 40px;
+    height: 40px;
+  }
+  
+  /* .iframe-loader p,
+  .iframe-error p {
+    font-size: 12px;
+  } */
+}
+
+/* Стили для модального окна */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 16px;
+  padding: 32px;
+  width: 90%;
+  max-width: 400px;
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from { transform: translateY(-30px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.modal-content h2 {
+  margin: 0 0 24px 0;
+  text-align: center;
+  color: #1a1a2e;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.error-message {
+  background: #fee;
+  color: #c33;
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.loading-message {
+  background: #e3f2fd;
+  color: #1976d2;
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.modal-buttons button {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  background: #667eea;
+  color: white;
+}
+
+.modal-footer {
+  margin-top: 20px;
+  text-align: center;
+  font-size: 12px;
+  color: #999;
+}
+
+/* Стили для информации о пользователе */
+.user-info {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  margin: 16px;
+  border-radius: 12px;
+}
+
+.user-avatar {
+  width: 48px;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: bold;
+  color: white;
+  margin-right: 12px;
+}
+
+.user-details {
+  flex: 1;
+}
+
+.user-name {
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.user-role {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 12px;
+  text-transform: capitalize;
+}
+
+.logout-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 16px;
+  color: white;
+}
