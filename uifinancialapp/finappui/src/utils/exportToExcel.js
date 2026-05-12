@@ -18,7 +18,7 @@ export const exportToExcel = (data, filename = null) => {
   const dateTimeStr = `${year}-${month}-${day}_${hours}-${minutes}-${seconds}`;
   
   // Генерируем имя файла
-  const finalFilename = filename || `${orgName}_${dateTimeStr}.xlsx`;
+  const finalFilename = `${filename}_${orgName}_${dateTimeStr}.xlsx`;
   
   const worksheet = XLSX.utils.json_to_sheet(data);
   const workbook = XLSX.utils.book_new();

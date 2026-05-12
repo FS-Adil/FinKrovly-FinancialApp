@@ -92,7 +92,7 @@ const DataTable = ({ data, loading }) => {
           icon={<FileExcelOutlined />}
           onClick={() => exportToExcel(
             data,
-            // 'report.xlsx'
+            'Маржа'
           )}
           disabled={!data.length}
         >
