@@ -399,7 +399,7 @@ const transformServerData = (serverData, startDate, endDate, organizationId, org
     const name = item['name'];
     const characteristic = item['characteristic'];
     const batch = item['batch'];
-    const measurementUnit = item['measurementUnit']
+    const measurementUnit = item['measurementUnit'];
     const quantity = item['quantity'];
     const price = item['price'];
     const cost = item['cost'];
@@ -628,6 +628,7 @@ const transformServerDataInventory = (serverData, date, organizationId, orgName)
     const name = item['name'] || item['Наименование'] || item['наименование'] || '';
     const characteristic = item['characteristic'] || item['Характеристика'] || item['характеристика'] || '';
     const batch = item['batch'] || item['Партия'] || item['партия'] || '';
+    const measurementUnit = item['measurementUnit'];
     const quantity = item['quantity'] || item['Количество'] || item['количество'] || 0;
     const cost = item['cost'] || item['Себестоимость'] || item['себестоимость'] || item['price'] || 0;
     
@@ -642,6 +643,7 @@ const transformServerDataInventory = (serverData, date, organizationId, orgName)
       name: String(name || 'Без названия'),
       characteristic: String(characteristic || ''),
       batch: String(batch || ''),
+      measurementUnit,
       quantity: Number(quantity) || 0,
       cost: Number(cost) || 0,
       date: date,
@@ -681,9 +683,21 @@ export const calculateAssemblyCost = async (params, organizationId) => {
     
     console.log('📦 Ответ от сервера:', response.data);
 
-    const org = mockOrganizations.find(o => o.id === organizationId) || { 
-      name: 'Тестовая организация' 
-    };
+    // const org = mockOrganizations.find(o => o.id === organizationId) || { 
+    //   name: 'Тестовая организация' 
+    // };
+
+    // Сначала получаем данные организации
+    const organizations = await getOrganizationsNew();
+
+    let org = organizations.find(o => o.id === organizationId);
+    
+    if (!org) {
+      console.warn(`⚠️ Организация с ID ${organizationId} не найдена`);
+      org = { id: organizationId, name: 'Тестовая организация' };
+    } else {
+      console.log('✅ Организация найдена через getOrganizations:', org);
+    }
     
     // Преобразуем данные с сервера
     let transformedData = [];
@@ -771,6 +785,7 @@ const generateMockBalanceData = (date, organizationId) => {
     name: `Товар ${i + 1}`,
     characteristic: `Характеристика ${Math.floor(Math.random() * 10) + 1}`,
     batch: `Партия ${Math.floor(Math.random() * 20) + 1}`,
+    measurementUnit: `Шт ${i + 1}`,
     category: PRODUCT_CATEGORIES[Math.floor(Math.random() * PRODUCT_CATEGORIES.length)],
     quantity: Math.floor(Math.random() * 500) + 1,
     cost: parseFloat((Math.random() * 5000 + 100).toFixed(2)),

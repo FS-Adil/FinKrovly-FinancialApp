@@ -28,6 +28,13 @@ const AssemblyCostTable = ({ data, loading }) => {
       fixed: 'left',
     },
     {
+      title: 'Единица Измерения',
+      dataIndex: 'measurementUnit',
+      key: 'measurementUnit',
+      width: 100,
+      fixed: 'left',
+    },
+    {
       title: 'Количество',
       dataIndex: 'quantity',
       key: 'quantity',
@@ -71,7 +78,10 @@ const AssemblyCostTable = ({ data, loading }) => {
         <Button 
           type="primary" 
           icon={<FileExcelOutlined />}
-          onClick={() => exportToExcel(data, 'assembly-cost.xlsx')}
+          onClick={() => exportToExcel(
+            data, 
+            'Остатки'
+          )}
           disabled={!data.length}
         >
           Экспорт в Excel
