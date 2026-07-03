@@ -27,7 +27,7 @@ const FIELD_ORDER = [
   'name',
   'characteristic',
   'batch',
-  // 'category',              // Не нужно
+  'category',         
   'measurementUnit',
   'quantity',
   'price',
@@ -35,7 +35,7 @@ const FIELD_ORDER = [
   'cost',
   'Себестоимость единицы',   // Вычисляемое поле
   'profit',
-  // 'profitability',         // Не нужно
+  'profitability',         
   // 'date',                  // Не нужно
   // 'organization',          // Не нужно
   // 'organizationId',        // Не нужно
@@ -98,7 +98,7 @@ const calculateColumnWidths = (data) => {
         const char = strValue[i];
         // Проверяем, является ли символ кириллицей
         if (/[а-яА-ЯёЁ]/.test(char)) {
-          length += 1.5; // Русские буквы шире
+          length += 1,5; // Русские буквы шире
         } else {
           length += 1; // Латиница, цифры, знаки
         }
@@ -115,11 +115,11 @@ const calculateColumnWidths = (data) => {
   });
   
   // Также учитываем ширину заголовков
-  Object.keys(columnWidths).forEach(key => {
-    const headerLength = key.length * 1.2 + 2; // Заголовки обычно немного шире
-    columnWidths[key] = Math.max(columnWidths[key], headerLength, 10); // Минимальная ширина 10
-    columnWidths[key] = Math.min(columnWidths[key], 50); // Максимальная ширина 50
-  });
+  // Object.keys(columnWidths).forEach(key => {
+  //   const headerLength = key.length * 1.2; // Заголовки обычно немного шире
+  //   columnWidths[key] = Math.max(columnWidths[key], headerLength, 10); // Минимальная ширина 10
+  //   columnWidths[key] = Math.min(columnWidths[key], 50); // Максимальная ширина 50
+  // });
   
   return columnWidths;
 };
@@ -200,15 +200,15 @@ export const exportToExcel = (data, filename = 'report') => {
   
   // Дополнительно: форматирование чисел (опционально)
   // Можно добавить формат для числовых колонок
-  const range = XLSX.utils.decode_range(worksheet['!ref']);
-  for (let row = range.s.r; row <= range.e.r; row++) {
-    for (let col = range.s.c; col <= range.e.c; col++) {
-      const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
-      if (worksheet[cellAddress] && typeof worksheet[cellAddress].v === 'number') {
-        worksheet[cellAddress].z = '# ##0.00'; // Формат числа
-      }
-    }
-  }
+  // const range = XLSX.utils.decode_range(worksheet['!ref']);
+  // for (let row = range.s.r; row <= range.e.r; row++) {
+  //   for (let col = range.s.c; col <= range.e.c; col++) {
+  //     const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+  //     if (worksheet[cellAddress] && typeof worksheet[cellAddress].v === 'number') {
+  //       worksheet[cellAddress].z = '# ##0.00'; // Формат числа
+  //     }
+  //   }
+  // }
   
   // Создаем workbook и сохраняем
   const workbook = XLSX.utils.book_new();
