@@ -128,7 +128,7 @@ const generateMockReportData = (startDate, endDate, organizationId) => {
       characteristic: `Характеристика ${i + 1}`,
       batch: `Партия ${i + 1}`,
       measurementUnit: `Шт ${i + 1}`,
-      // category: PRODUCT_CATEGORIES[Math.floor(Math.random() * PRODUCT_CATEGORIES.length)],
+      category: PRODUCT_CATEGORIES[Math.floor(Math.random() * PRODUCT_CATEGORIES.length)],
       quantity: Math.floor(Math.random() * 1000) + 1,
       price: parseFloat((Math.random() * 10000 + 100).toFixed(2)),
       cost: parseFloat((Math.random() * 8000 + 50).toFixed(2)),
@@ -399,6 +399,7 @@ const transformServerData = (serverData, startDate, endDate, organizationId, org
     const name = item['name'];
     const characteristic = item['characteristic'];
     const batch = item['batch'];
+    const category = item['categories'];
     const measurementUnit = item['measurementUnit'];
     const quantity = item['quantity'];
     const price = item['price'];
@@ -423,7 +424,7 @@ const transformServerData = (serverData, startDate, endDate, organizationId, org
     const productId = number;
 
     // Определяем категорию на основе названия товара
-    const category = PRODUCT_CATEGORIES[0];
+    // const category = PRODUCT_CATEGORIES[0];
 
     // Возвращаем объект в формате generateMockReportData
     return {
