@@ -132,6 +132,7 @@ const generateMockReportData = (startDate, endDate, organizationId) => {
       quantity: Math.floor(Math.random() * 1000) + 1,
       price: parseFloat((Math.random() * 10000 + 100).toFixed(2)),
       cost: parseFloat((Math.random() * 8000 + 50).toFixed(2)),
+      autoFilling: 'Да',
       profit: 0, // будет вычислено
       profitability: 0, // будет вычислено
       date,
@@ -404,6 +405,7 @@ const transformServerData = (serverData, startDate, endDate, organizationId, org
     const quantity = item['quantity'];
     const price = item['price'];
     const cost = item['cost'];
+    const autoFilling = item['autoFilling'];
 
     // Если критически важные поля отсутствуют, пропускаем элемент
     if (!name || isNaN(quantity) || isNaN(price) || isNaN(cost)) {
@@ -438,6 +440,7 @@ const transformServerData = (serverData, startDate, endDate, organizationId, org
       quantity,
       price,
       cost,
+      autoFilling,
       profit,
       profitability,
       date: generateRandomDate(startDate, endDate), // дата генерируется случайно
@@ -790,6 +793,7 @@ const generateMockBalanceData = (date, organizationId) => {
     category: PRODUCT_CATEGORIES[Math.floor(Math.random() * PRODUCT_CATEGORIES.length)],
     quantity: Math.floor(Math.random() * 500) + 1,
     cost: parseFloat((Math.random() * 5000 + 100).toFixed(2)),
+    autoFilling: 'Да',
     date,
     organization: org.name,
     organizationId: org.id,
