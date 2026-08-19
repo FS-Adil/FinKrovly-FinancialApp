@@ -11,6 +11,7 @@ const FIELD_TRANSLATIONS = {
   category: 'Категория',
   quantity: 'Количество',
   price: 'Цена',
+  autoFilling: 'Авто Расчет',
   cost: 'Себестоимость',
   profit: 'Прибыль',
   profitability: 'Рентабельность',
@@ -32,6 +33,7 @@ const FIELD_ORDER = [
   'quantity',
   'price',
   'Цена за единицу',         // Вычисляемое поле
+  'autoFilling',
   'cost',
   'Себестоимость единицы',   // Вычисляемое поле
   'profit',
